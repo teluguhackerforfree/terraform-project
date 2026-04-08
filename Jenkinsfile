@@ -2,33 +2,42 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-creds').username
-        AWS_SECRET_ACCESS_KEY = credentials('aws-creds').password
+        AWS_CREDS = credentials('aws-creds')
+        TF_PLUGIN_TIMEOUT = "60s"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/your-repo/terraform-jenkins-project.git'
+                git branch: 'master',
+                    url: 'https://github.com/teluguhackerforfree/terraform-project.git'
+            }
+        }
+
+        stage('Clean Terraform') {
+            steps {
+                sh 'rm -rf .terraform .terraform.lock.hcl'
             }
         }
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                sh 'terraform plan'
+                sh '''
+                export AWS_ACCESS_KEY_ID=$AWS_CREDS_USR
+                export AWS_SECRET_ACCESS_KEY=$AWS_CREDS_PSW
+                terraform init -upgrade
+                '''
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                sh 'terraform apply -auto-approve'
+                sh '''
+                export AWS_ACCESS_KEY_ID=$AWS_CREDS_USR
+                export AWS_SECRET_ACCESS_KEY=$AWS_CREDS_PSW
+                terraform apply -auto-approve
+                '''
             }
         }
     }
